@@ -11,16 +11,17 @@
             background-color: #f4f4f4;
             display: flex;
             justify-content: center;
-            align-items: center;
-            height: 100vh;
+            align-items: flex-start;
+            min-height: 100vh;
             margin: 0;
+            padding: 40px 20px;
         }
         .container {
             background: #fff;
-            padding: 20px 30px;
+            padding: 30px 40px;
             border-radius: 8px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-            max-width: 400px;
+            max-width: 500px;
             width: 100%;
         }
         h1 {
@@ -33,10 +34,20 @@
             margin-top: 10px;
             color: #444;
         }
-        input[type="number"] {
-            width: 100%;
-            padding: 10px;
-            margin-top: 5px;
+        .unit-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .unit-row input[type="number"] {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .unit-row select {
+            padding: 8px;
             border: 1px solid #ccc;
             border-radius: 4px;
         }
@@ -63,30 +74,114 @@
         .result p {
             margin: 0;
         }
+        .info-section {
+            margin-top: 40px;
+            background-color: #fff;
+            padding: 30px 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+        .info-section h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .bmi-image {
+            width: 100%;
+            height: auto;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        .image-credit {
+            font-size: 12px;
+            text-align: right;
+        }
+        .image-credit a {
+            color: #007bff;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>BMI Calculator</h1>
-        <label for="weight">Weight (kg):</label>
-        <input type="number" id="weight" placeholder="Enter your weight in kilograms">
-        <label for="height">Height (m):</label>
-        <input type="number" id="height" placeholder="Enter your height in meters" step="0.01">
+        <label for="weight">Weight:</label>
+        <div class="unit-row">
+            <input type="number" id="weight" placeholder="Enter weight">
+            <select id="weightUnit">
+                <option value="kg">kg</option>
+                <option value="lbs">lbs</option>
+            </select>
+        </div>
+        <label for="heightUnit">Height:</label>
+        <div class="unit-row" id="height-meters-row">
+            <input type="number" id="height" placeholder="Enter height in meters" step="0.01">
+            <select id="heightUnit" onchange="toggleHeightFields()">
+                <option value="m">m</option>
+                <option value="ft">ft/in</option>
+            </select>
+        </div>
+        <div class="unit-row" id="height-feet-row" style="display: none;">
+            <input type="number" id="heightFeet" placeholder="Feet">
+            <input type="number" id="heightInches" placeholder="Inches">
+        </div>
         <button onclick="calculateBMI()">Calculate BMI</button>
         <div id="result" class="result" style="display: none;"></div>
     </div>
+
+    <div class="info-section">
+        <h2>BMI Categories</h2>
+        <p><strong>Underweight:</strong> Less than 18.5</p>
+        <p><strong>Normal weight:</strong> 18.5–25</p>
+        <p><strong>Overweight:</strong> 25–30</p>
+        <p><strong>Obesity:</strong> 30 or greater (Class&nbsp;1: 30–35, Class&nbsp;2: 35–40, Class&nbsp;3: 40 or greater)</p>
+        <img src="bmi_chart.png" alt="BMI chart" class="bmi-image">
+        <p class="image-credit">Image credit: <a href="https://commons.wikimedia.org/wiki/File:BMI_chart.png" target="_blank">Wikimedia Commons</a></p>
+    </div>
+
     <script>
+        function toggleHeightFields() {
+            const unit = document.getElementById('heightUnit').value;
+            const meterRow = document.getElementById('height-meters-row');
+            const feetRow = document.getElementById('height-feet-row');
+            if (unit === 'ft') {
+                meterRow.style.display = 'none';
+                feetRow.style.display = 'flex';
+            } else {
+                meterRow.style.display = 'flex';
+                feetRow.style.display = 'none';
+            }
+        }
+
         function calculateBMI() {
             const weight = parseFloat(document.getElementById('weight').value);
-            const height = parseFloat(document.getElementById('height').value);
+            const weightUnit = document.getElementById('weightUnit').value;
+            let weightKg = weightUnit === 'lbs' ? weight * 0.453592 : weight;
+
+            const heightUnit = document.getElementById('heightUnit').value;
+            let heightMeters;
+            if (heightUnit === 'm') {
+                const hVal = parseFloat(document.getElementById('height').value);
+                heightMeters = hVal;
+            } else {
+                const feet = parseFloat(document.getElementById('heightFeet').value);
+                const inches = parseFloat(document.getElementById('heightInches').value);
+                heightMeters = feet * 0.3048 + inches * 0.0254;
+            }
+
             const resultDiv = document.getElementById('result');
             resultDiv.style.display = 'block';
-            if (!weight || !height || weight <= 0 || height <= 0) {
+
+            if (!weightKg || weightKg <= 0 || !heightMeters || heightMeters <= 0) {
                 resultDiv.innerHTML = '<p>Please enter valid weight and height values.</p>';
                 return;
             }
-            const bmi = weight / (height * height);
+
+            const bmi = weightKg / (heightMeters * heightMeters);
             let category = '';
+
             if (bmi < 18.5) {
                 category = 'Underweight';
             } else if (bmi < 25) {
@@ -94,10 +189,19 @@
             } else if (bmi < 30) {
                 category = 'Overweight';
             } else {
-                category = 'Obesity';
+                if (bmi < 35) {
+                    category = 'Obesity (Class 1)';
+                } else if (bmi < 40) {
+                    category = 'Obesity (Class 2)';
+                } else {
+                    category = 'Obesity (Class 3)';
+                }
             }
-            resultDiv.innerHTML = `<p>Your BMI is <strong>${bmi.toFixed(2)}</strong>.</p><p>Category: <strong>${category}</strong>.</p>`;
+
+            resultDiv.innerHTML = '<p>Your BMI is <strong>' + bmi.toFixed(2) + '</strong>.</p><p>Category: <strong>' + category + '</strong></p>';
         }
+
+        window.onload = toggleHeightFields;
     </script>
 </body>
 </html>
